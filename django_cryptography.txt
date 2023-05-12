@@ -1,0 +1,65 @@
+STEP1==>>pip install cryptography
+
+
+STEP2==>>open python shell and run :
+>>python manage.py shell 
+Python 3.8.0 (tags/v3.8.0:fa919fd, Oct 14 2019, 19:37:50) [MSC v.1916 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+(InteractiveConsole)
+>>> from cryptography.fernet import Fernet
+>>> Fernet.generate_key()
+b'ug-w6XwdUA-6ad_xZ4hxGSj7tP74GKpHAhN5YIHMyKU='
+
+
+STEP3==>> add it into setting.py :
+ENCRYPT_KEY = b'ug-w6XwdUA-6ad_xZ4hxGSj7tP74GKpHAhN5YIHMyKU='
+
+
+STEP4==>> create encryption_util.py
+from cryptography.fernet import Fernet
+import base64
+import logging
+import traceback
+from django.conf import settings
+
+#this is your "password/ENCRYPT_KEY". keep it in settings.py file
+#key = Fernet.generate_key() 
+
+def encrypt(txt):
+    try:
+        # convert integer etc to string first
+        txt = str(txt)
+        # get the key from settings
+        cipher_suite = Fernet(settings.ENCRYPT_KEY) # key should be byte
+        # #input should be byte, so convert the text to byte
+        encrypted_text = cipher_suite.encrypt(txt.encode('ascii'))
+        # encode to urlsafe base64 format
+        encrypted_text = base64.urlsafe_b64encode(encrypted_text).decode("ascii") 
+        return encrypted_text
+    except Exception as e:
+        # log the error if any
+        logging.getLogger("error_logger").error(traceback.format_exc())
+        return None
+
+
+def decrypt(txt):
+    try:
+        # base64 decode
+        txt = base64.urlsafe_b64decode(txt)
+        cipher_suite = Fernet(settings.ENCRYPT_KEY)
+        decoded_text = cipher_suite.decrypt(txt).decode("ascii")     
+        return decoded_text
+    except Exception as e:
+        # log the error
+        logging.getLogger("error_logger").error(traceback.format_exc())
+        return None
+	
+	
+STEP5==>>now u can use it into views.py
+from appName.modules.cryptography import encryption_util	
+
+def functionName(request):
+	encryption_util.encrypt(user_password)
+	encryption_util.decrypt(user_password)
+	return redirect("smpLogin")
+	
